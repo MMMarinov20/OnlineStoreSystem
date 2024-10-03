@@ -1,43 +1,39 @@
 ﻿using System;
+using OnlineStoreSystem.Events;
 
 namespace OnlineStoreSystem.Models
 {
     public abstract class Product
     {
-        public string Name { get; private set; }
-        public decimal Price { get; private set; }
-        public int Stock { get; protected set; }
+        public string Name { get; set; }
+        public decimal Price { get; set; }
+        public int Stock { get; set; }
 
-        public Product(string name, decimal price, int stock)
+        private readonly IStockEvent _stockEventHandler;
+
+        protected Product(string name, decimal price, int stock, IStockEvent stockEventHandler)
         {
             Name = name;
             Price = price;
             Stock = stock;
+            _stockEventHandler = stockEventHandler;
         }
 
         public abstract void DisplayDetails();
 
         public bool ReduceStock(int quantity)
         {
-            if (quantity > Stock)
+            if (quantity <= Stock)
             {
-                Console.WriteLine($"Insufficient stock for {Name}. Available: {Stock}");
-                return false;
+                Stock -= quantity;
+
+                if (Stock == 0)
+                {
+                    _stockEventHandler.OnOutOfStock($"{Name} is now out of stock!");
+                }
+                return true;
             }
-
-            Stock -= quantity;
-            Console.WriteLine($"{quantity} units of {Name} deducted from stock.");
-
-            if (Stock == 0)
-            {
-                OnOutOfStock();
-            }
-            return true;
-        }
-
-        protected virtual void OnOutOfStock()
-        {
-            Console.WriteLine($"[EVENT] {Name} is now out of stock!");
+            return false;
         }
     }
 }
